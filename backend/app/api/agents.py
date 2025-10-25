@@ -1,28 +1,30 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Depends
+from app.core.config import settings
+from app.services.queue import pop_task
 from sqlalchemy.orm import Session
-from app.schemas.agent_schema import AgentCreate, AgentRead
-from app.services.agent_service import register_agent, update_heartbeat
-from app.core.config import get_db
+from app.services.db_service import get_db
 
 router = APIRouter()
 
-# Регистрация нового агента
-@router.post("/agents", response_model=AgentRead)
-def create_agent(agent_create: AgentCreate, db: Session = Depends(get_db)):
-    """
-    Агент присылает свои данные: name, ip_address, region
-    Backend сохраняет его в базе
-    """
-    agent = register_agent(db, agent_create)
-    return agent
+def verify_token(x_token: str = Header(...)):
+    if x_token != settings.AGENT_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid token")
+    return True
 
-# Heartbeat агента
-@router.put("/agents/{agent_id}/heartbeat", response_model=AgentRead)
-def heartbeat(agent_id: int, db: Session = Depends(get_db)):
-    """
-    Агент присылает heartbeat, чтобы сказать, что он живой
-    """
-    agent = update_heartbeat(db, agent_id)
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    return agent
+@router.post("/agents/heartbeat")
+def heartbeat(auth: bool = Depends(verify_token)):
+    return {"status": "alive"}
+
+@router.post("/agents/get_task")
+def get_task(auth: bool = Depends(verify_token), db: Session = Depends(get_db)):
+    task_id = pop_task()
+    if not task_id:
+        return {"task": None}
+    return {"task_id": task_id}
+
+@router.post("/agents/report")
+def report(task_id: int, status: str, message: str = None, auth: bool = Depends(verify_token), db: Session = Depends(get_db)):
+    """Агент отправляет результаты проверки"""
+    from app.services.task_service import create_result
+    result = create_result(db, task_id, status, message)
+    return {"result_id": result.id}

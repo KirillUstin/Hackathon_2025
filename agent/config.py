@@ -1,6 +1,5 @@
-REDIS_HOST = "localhost"
-REDIS_PORT = 6379
-REDIS_DB = 0
-BACKEND_URL = "http://localhost:8000/api"
-AGENT_NAME = "agent-1"
-AGENT_REGION = "RU"
+# agent/config.py
+import os
+
+AGENT_TOKEN = os.getenv("AGENT_TOKEN", "supersecret")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")  # ⚠️ имя сервиса backend в docker-compose

@@ -1,30 +1,20 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+# backend/app/core/config.py
 import os
-from dotenv import load_dotenv
+from pydantic import BaseSettings
 
-load_dotenv()  # читаем .env
+class Settings(BaseSettings):
+    # ⚠️ В Docker эти значения будут переопределяться через env
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "postgres"
+    POSTGRES_DB: str = "aeza"
+    POSTGRES_HOST: str = "db"         # имя сервиса PostgreSQL в docker-compose
+    POSTGRES_PORT: int = 5432
 
-POSTGRES_USER = os.getenv("POSTGRES_USER")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-POSTGRES_DB = os.getenv("POSTGRES_DB")
-POSTGRES_HOST = os.getenv("POSTGRES_HOST")
-POSTGRES_PORT = os.getenv("POSTGRES_PORT", 5432)
+    REDIS_URL: str = "redis://redis:6379/0"  # имя сервиса Redis в docker-compose
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-REDIS_DB = int(os.getenv("REDIS_DB", 0))
+    AGENT_TOKEN: str = "supersecret"  # токен для агентов
 
-DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+    class Config:
+        env_file = ".env"  # ⚠️ при выгрузке на GitHub можно оставить env.example
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-# Dependency для FastAPI
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+settings = Settings()

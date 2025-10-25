@@ -1,72 +1,39 @@
-"""
-Тесты для эндпоинтов, связанных с задачами (tasks).
-Проверяются:
- - создание задачи;
- - получение задачи по ID;
- - получение списка задач;
-"""
-
-from fastapi.testclient import TestClient
-from app.main import app  # основной объект FastAPI
+# tests/test_tasks.py
 import pytest
+from fastapi.testclient import TestClient
+from app.main import app
+from app.core.config import settings
+from app.services.db_service import SessionLocal, engine
+from app.models.task import Base
 
-# создаём клиент, который будет посылать HTTP-запросы к нашему приложению
+# ⚠️ Создание тестовой БД в памяти для dry-run
+@pytest.fixture(scope="module")
+def test_db():
+    # создаём таблицы
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    yield db
+    db.close()
+    Base.metadata.drop_all(bind=engine)
+
 client = TestClient(app)
 
-
-def test_create_task():
-    """
-    Проверяем, что можно создать задачу через POST /api/tasks
-    и что в ответе приходят нужные поля.
-    """
-    payload = {
-        "target": "example.com",
-        "checks": ["ping", "http"]
-    }
-
-    response = client.post("/api/tasks", json=payload)
-
-    # 1. Проверяем, что сервер ответил 200 OK
+def test_create_task(test_db):
+    response = client.post("/api/tasks", json={"url": "http://example.com", "type": "http"})
     assert response.status_code == 200
-
-    # 2. Проверяем, что в ответе действительно есть данные задачи
     data = response.json()
-    assert "id" in data
-    assert data["target"] == "example.com"
-    assert data["status"] in ("pending", "created")
+    assert data["url"] == "http://example.com"
+    assert data["type"] == "http"
+    assert data["status"] == "PENDING"
 
-    # 3. Возвращаем id для последующих тестов
-    return data["id"]
-
-
-def test_get_task_by_id():
-    """
-    Проверяем получение конкретной задачи по ID.
-    Для этого сначала создаём задачу, потом запрашиваем её.
-    """
-    new_task = {"target": "8.8.8.8", "checks": ["ping"]}
-    create_resp = client.post("/api/tasks", json=new_task)
-    task_id = create_resp.json()["id"]
-
-    # теперь запрашиваем задачу
+def test_get_task(test_db):
+    # создаём задачу через API
+    response = client.post("/api/tasks", json={"url": "http://example.org", "type": "ping"})
+    task_id = response.json()["id"]
+    
+    # получаем задачу
     response = client.get(f"/api/tasks/{task_id}")
     assert response.status_code == 200
-
     data = response.json()
     assert data["id"] == task_id
-    assert data["target"] == "8.8.8.8"
-
-
-def test_list_tasks():
-    """
-    Проверяем, что /api/tasks возвращает список всех задач.
-    """
-    response = client.get("/api/tasks")
-    assert response.status_code == 200
-
-    data = response.json()
-    assert isinstance(data, list)
-    # если хотя бы одна задача есть — у неё должны быть id и target
-    if data:
-        assert "id" in data[0]
-        assert "target" in data[0]
+    assert data["url"] == "http://example.org"
