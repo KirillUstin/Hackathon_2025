@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7
+    container_name: aeza-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    container_name: aeza-db
+    environment:
+      POSTGRES_USER: aeza_user
+      POSTGRES_PASSWORD: aeza_pass
+      POSTGRES_DB: aeza
+    ports:
+      - "5432:5432"
+    volumes:
+      - aeza-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build: ../backend
+    container_name: aeza-backend
+    env_file: ../.env
+    depends_on:
+      - redis
+      - db
+    ports:
+      - "8000:8000"
+    command: sh -c "infra/scripts/wait_for_services.sh && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    restart: unless-stopped
+
+  agent:
+    build: ../agent
+    container_name: aeza-agent
+    env_file: ../.env
+    depends_on:
+      - redis
+      - backend
+    command: sh -c "infra/scripts/wait_for_services.sh && python agent.py"
+    restart: unless-stopped
+
+  frontend:
+    build: ../frontend
+    container_name: aeza-frontend
+    env_file: ../.env
+    ports:
+      - "3000:3000"
+    command: npm run dev
+    restart: unless-stopped
+
+volumes:
+  aeza-db-data:
+
