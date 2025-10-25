@@ -1,15 +1,25 @@
-import uuid
-from sqlalchemy import Column, String, JSON, TIMESTAMP
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
-from backend.app.core.db import Base
+from sqlalchemy import Column, Integer, String, DateTime, Enum
+from sqlalchemy.orm import relationship
+from datetime import datetime
+from enum import Enum as PyEnum
+from app.core.config import Base  # SQLAlchemy Base импортируем из core/config
+
+# Определяем возможные статусы задачи
+class TaskStatus(PyEnum):
+    PENDING = "pending"         # Задача создана, но не обработана
+    IN_PROGRESS = "in_progress" # Агент начал проверку
+    DONE = "done"               # Проверка завершена успешно
+    FAILED = "failed"           # Проверка завершилась с ошибкой
 
 class Task(Base):
-    __tablename__ = "tasks"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    target = Column(String, nullable=False)
-    checks = Column(JSON, nullable=False)
-    status = Column(String, nullable=False, default="pending")
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+    __tablename__ = "tasks"  # Имя таблицы в базе данных
 
+    id = Column(Integer, primary_key=True, index=True)  # Уникальный идентификатор задачи
+    host = Column(String, nullable=False)               # Домен или IP, который проверяем
+    type = Column(String, nullable=False)               # Тип проверки: http, ping, dns, tcp
+    status = Column(Enum(TaskStatus), default=TaskStatus.PENDING)  # Статус задачи
+    created_at = Column(DateTime, default=datetime.utcnow)          # Дата создания
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # Дата последнего обновления
+
+    # Связь с таблицей результатов (одна задача → несколько результатов, например при нескольких типах проверок)
+    results = relationship("Result", back_populates="task", cascade="all, delete-orphan")

@@ -52,18 +52,6 @@ services:
     command: npm run dev
     restart: unless-stopped
 
-  alembic:
-    build: ../backend
-    container_name: aeza-alembic
-    working_dir: /backend/migrations
-    env_file: ../.env
-    depends_on:
-      - db
-    command: sh -c "alembic -c alembic.ini upgrade head"
-    volumes:
-      - ../backend:/backend
-    restart: "no"
-
 volumes:
   aeza-db-data:
 
