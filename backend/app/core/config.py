@@ -1,6 +1,6 @@
 # backend/app/core/config.py
 import os
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # ⚠️ В Docker эти значения будут переопределяться через env

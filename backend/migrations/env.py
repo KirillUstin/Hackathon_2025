@@ -1,45 +1,77 @@
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
-from alembic import context
 import sys
 import os
 
-sys.path.append(os.path.join(sys.path[0], '..'))  # чтобы видеть app/
+from sqlalchemy import engine_from_config, pool
+from alembic import context
 
-from app.models.task import Base as TaskBase
-from app.models.result import Base as ResultBase
+# -------------------------
+# Добавляем backend в sys.path
+# -------------------------
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# -------------------------
+# Импорт моделей и настроек
+# -------------------------
+from app.models import Base # единый Base для Task и Result
 from app.core.config import settings
 
-# Логгирование
+# -------------------------
+# Alembic Config object
+# -------------------------
 config = context.config
-fileConfig(config.config_file_name)
 
-# ⚠️ target_metadata объединяет все метаданные
-target_metadata = TaskBase.metadata
+# Логирование
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
 
+# -------------------------
+# target_metadata для autogenerate
+# -------------------------
+target_metadata = Base.metadata
+
+# -------------------------
 # Установка URL БД из settings
+# -------------------------
 config.set_main_option(
     "sqlalchemy.url",
-    f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
+    f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}"
+    f"@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
 )
 
+# -------------------------
+# Offline migrations
+# -------------------------
 def run_migrations_offline():
     url = config.get_main_option("sqlalchemy.url")
-    context.configure(url=url, target_metadata=target_metadata, literal_binds=True)
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+    )
     with context.begin_transaction():
         context.run_migrations()
 
+# -------------------------
+# Online migrations
+# -------------------------
 def run_migrations_online():
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
-        prefix='sqlalchemy.',
-        poolclass=pool.NullPool
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata
+        )
         with context.begin_transaction():
             context.run_migrations()
 
+# -------------------------
+# Выбор режима Alembic
+# -------------------------
 if context.is_offline_mode():
     run_migrations_offline()
 else:

@@ -1,17 +1,20 @@
 from sqlalchemy import Column, Integer, String, Enum
-from sqlalchemy.orm import relationship, declarative_base
+from app.models.base import Base  # ✅ импортируем отсюда
 
-Base = declarative_base()
+import enum
 
-class TaskStatus(str, Enum):
-    PENDING = "PENDING"
-    IN_PROGRESS = "IN_PROGRESS"
-    DONE = "DONE"
+# Определяем статус задачи (enum)
+class TaskStatus(enum.Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED = "failed"
 
+# Основная таблица Task
 class Task(Base):
     __tablename__ = "tasks"
+
     id = Column(Integer, primary_key=True, index=True)
-    url = Column(String, nullable=False)
-    type = Column(String, nullable=False)  # http, ping, dns
+    type = Column(String(50), nullable=False)
+    target = Column(String(255), nullable=False)
     status = Column(Enum(TaskStatus), default=TaskStatus.PENDING)
-    results = relationship("Result", back_populates="task")
