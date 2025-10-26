@@ -30,7 +30,7 @@ services:
       - db
     ports:
       - "8000:8000"
-    command: sh -c "infra/scripts/wait_for_services.sh && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     restart: unless-stopped
 
   agent:
@@ -40,7 +40,7 @@ services:
     depends_on:
       - redis
       - backend
-    command: sh -c "infra/scripts/wait_for_services.sh && python agent.py"
+    command: python agent.py
     restart: unless-stopped
 
   frontend:
