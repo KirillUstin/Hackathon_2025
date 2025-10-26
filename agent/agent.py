@@ -1,7 +1,7 @@
 import time
 import requests
 from config import BACKEND_URL, AGENT_TOKEN, AGENT_NAME
-from checkers import http_check, ping_check, dns_check
+from checkers import http_check, ping_check, dns_check, tracerout_check, tcp_check
 from utils.logger import get_logger
 
 logger = get_logger("agent")
@@ -42,6 +42,11 @@ def process_task(task: dict):
             res = ping_check.check_ping(target)
         elif check_type == "dns":
             res = dns_check.check_dns(target)
+        elif check_type == "tcp":
+            port = task.get("port", 80)
+            res = tcp_check.check_tcp(target, port)
+        elif check_type == "traceroute":
+            res = tracerout_check.check_traceroute(target)
         else:
             res = {"status": "error", "error": f"Unknown check type {check_type}"}
         send_result(task_id, check_type, res)

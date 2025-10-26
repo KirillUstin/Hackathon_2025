@@ -6,25 +6,32 @@ from app.services.db_service import get_db
 
 router = APIRouter()
 
+# Проверка токена агента
 def verify_token(x_token: str = Header(...)):
     if x_token != settings.AGENT_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid token")
     return True
 
+# Эндпоинт heartbeat
 @router.post("/agents/heartbeat")
 def heartbeat(auth: bool = Depends(verify_token)):
     return {"status": "alive"}
 
+# Эндпоинт получения задачи
 @router.post("/agents/get_task")
 def get_task(auth: bool = Depends(verify_token), db: Session = Depends(get_db)):
-    task_id = pop_task()
-    if not task_id:
+    task = pop_task()
+    if not task:
         return {"task": None}
-    return {"task_id": task_id}
+    return {"task_id": task.id, "target": task.target, "checks": task.checks}  # ⚠️ важно вернуть список проверок
 
+# Эндпоинт отправки результата
 @router.post("/agents/report")
-def report(task_id: int, status: str, message: str = None, auth: bool = Depends(verify_token), db: Session = Depends(get_db)):
-    """Агент отправляет результаты проверки"""
+def report(task_id: int, check_type: str, result: dict, auth: bool = Depends(verify_token), db: Session = Depends(get_db)):
+    """
+    Агент отправляет результат одной проверки (http, ping, dns, tcp, traceroute)
+    result: dict с результатом
+    """
     from app.services.task_service import create_result
-    result = create_result(db, task_id, status, message)
-    return {"result_id": result.id}
+    res = create_result(db, task_id, check_type, result)
+    return {"result_id": res.id}

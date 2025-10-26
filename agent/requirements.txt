@@ -3,3 +3,4 @@ pythonping
 dnspython
 redis
 python-dotenv
+dnspython

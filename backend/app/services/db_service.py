@@ -3,9 +3,7 @@ from app.models.task import Task, TaskStatus
 from app.schemas.task_schema import TaskCreate
 
 def create_task_in_db(db: Session, task_data: TaskCreate) -> Task:
-    """
-    Сохраняем новую задачу в PostgreSQL
-    """
+    #Сохраняем новую задачу 
     task = Task(
         host=task_data.host,
         type=task_data.type,

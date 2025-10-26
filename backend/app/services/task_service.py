@@ -13,11 +13,7 @@ class TaskService:
 
     @staticmethod
     def create_task(db: Session, task_data: TaskCreate) -> Task:
-        """
-        Создаём новую задачу:
-        1. Сохраняем в базу данных через db_service
-        2. Добавляем задачу в очередь Redis для агентов
-        """
+        
         task = create_task_in_db(db=db, task_data=task_data)
 
         push_task_to_queue(task)

@@ -1,9 +1,8 @@
-# backend/app/core/config.py
 import os
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    # ⚠️ В Docker эти значения будут переопределяться через env
+    #В Docker эти значения будут переопределяться через env
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
     POSTGRES_DB: str = "aeza"
@@ -15,6 +14,6 @@ class Settings(BaseSettings):
     AGENT_TOKEN: str = "supersecret"  # токен для агентов
 
     class Config:
-        env_file = ".env"  # ⚠️ при выгрузке на GitHub можно оставить env.example
+        env_file = ".env"  #при выгрузке на GitHub можно оставить env.example
 
 settings = Settings()
