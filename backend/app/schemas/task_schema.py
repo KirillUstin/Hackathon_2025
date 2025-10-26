@@ -1,20 +1,20 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
-class TaskCreate(BaseModel):
-    url: str
-    type: str  # http, ping, dns
-
 class TaskResult(BaseModel):
     status: str
     message: Optional[str]
 
+class TaskCreate(BaseModel):
+    host: str
+    type: str = "full_check"
+
 class TaskOut(BaseModel):
     id: int
-    url: str
+    target: str
     type: str
     status: str
-    results: List[TaskResult] = []
 
     class Config:
-        orm_mode = True
+        orm_mode = True  # чтобы можно было возвращать SQLAlchemy объекты
+

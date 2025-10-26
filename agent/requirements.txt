@@ -4,3 +4,4 @@ dnspython
 redis
 python-dotenv
 dnspython
+pydantic
